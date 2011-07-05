@@ -53,9 +53,16 @@ DIST_COMMON = README $(am__configure_deps) $(dist_man1_MANS) \
 	$(include_HEADERS) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/jconfig.h.in \
 	$(srcdir)/libjpeg.map.in $(top_srcdir)/configure \
+	$(top_srcdir)/release/Description.plist.in \
+	$(top_srcdir)/release/Info.plist.in \
+	$(top_srcdir)/release/deb-control.in \
 	$(top_srcdir)/release/libjpeg-turbo.spec.in \
+	$(top_srcdir)/release/makecygwinpkg.in \
+	$(top_srcdir)/release/makedpkg.in \
 	$(top_srcdir)/release/makemacpkg.in \
-	$(top_srcdir)/release/makesunpkg.in compile config.guess \
+	$(top_srcdir)/release/makesunpkg.in \
+	$(top_srcdir)/release/pkginfo.in \
+	$(top_srcdir)/release/uninstall.in compile config.guess \
 	config.sub depcomp install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -67,7 +74,11 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h jconfig.h
-CONFIG_CLEAN_FILES = libjpeg-turbo.spec makemacpkg makesunpkg \
+CONFIG_CLEAN_FILES = pkgscripts/libjpeg-turbo.spec \
+	pkgscripts/makecygwinpkg pkgscripts/makedpkg \
+	pkgscripts/deb-control pkgscripts/makemacpkg \
+	pkgscripts/Description.plist pkgscripts/Info.plist \
+	pkgscripts/uninstall pkgscripts/makesunpkg pkgscripts/pkginfo \
 	libjpeg.map
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -247,8 +258,6 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-IS_WIN32_FALSE = @IS_WIN32_FALSE@
-IS_WIN32_TRUE = @IS_WIN32_TRUE@
 JPEG_LIB_VERSION = @JPEG_LIB_VERSION@
 JPEG_LIB_VERSION_DECIMAL = @JPEG_LIB_VERSION_DECIMAL@
 LDFLAGS = @LDFLAGS@
@@ -466,11 +475,25 @@ stamp-h2: $(srcdir)/jconfig.h.in $(top_builddir)/config.status
 
 distclean-hdr:
 	-rm -f config.h stamp-h1 jconfig.h stamp-h2
-libjpeg-turbo.spec: $(top_builddir)/config.status $(top_srcdir)/release/libjpeg-turbo.spec.in
+pkgscripts/libjpeg-turbo.spec: $(top_builddir)/config.status $(top_srcdir)/release/libjpeg-turbo.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-makemacpkg: $(top_builddir)/config.status $(top_srcdir)/release/makemacpkg.in
+pkgscripts/makecygwinpkg: $(top_builddir)/config.status $(top_srcdir)/release/makecygwinpkg.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-makesunpkg: $(top_builddir)/config.status $(top_srcdir)/release/makesunpkg.in
+pkgscripts/makedpkg: $(top_builddir)/config.status $(top_srcdir)/release/makedpkg.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/deb-control: $(top_builddir)/config.status $(top_srcdir)/release/deb-control.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/makemacpkg: $(top_builddir)/config.status $(top_srcdir)/release/makemacpkg.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/Description.plist: $(top_builddir)/config.status $(top_srcdir)/release/Description.plist.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/Info.plist: $(top_builddir)/config.status $(top_srcdir)/release/Info.plist.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/uninstall: $(top_builddir)/config.status $(top_srcdir)/release/uninstall.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/makesunpkg: $(top_builddir)/config.status $(top_srcdir)/release/makesunpkg.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+pkgscripts/pkginfo: $(top_builddir)/config.status $(top_srcdir)/release/pkginfo.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libjpeg.map: $(top_builddir)/config.status $(srcdir)/libjpeg.map.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
@@ -1394,15 +1417,19 @@ testclean:
 	rm -f *_GRAYQ[0-9]*.bmp
 	rm -f *_GRAYQ[0-9]*.ppm
 	rm -f *_GRAYQ[0-9]*.jpg
+	rm -f *_GRAY.yuv
 	rm -f *_420Q[0-9]*.bmp
 	rm -f *_420Q[0-9]*.ppm
 	rm -f *_420Q[0-9]*.jpg
+	rm -f *_420.yuv
 	rm -f *_422Q[0-9]*.bmp
 	rm -f *_422Q[0-9]*.ppm
 	rm -f *_422Q[0-9]*.jpg
+	rm -f *_422.yuv
 	rm -f *_444Q[0-9]*.bmp
 	rm -f *_444Q[0-9]*.ppm
 	rm -f *_444Q[0-9]*.jpg
+	rm -f *_444.yuv
 
 @X86_64_TRUE@install-exec-hook:
 @X86_64_TRUE@	__PREFIX=`echo ${prefix} | sed -e 's@\/*$$@@'`;  \
@@ -1426,11 +1453,12 @@ rpm: all
 	TMPDIR=`mktemp -d /tmp/${PACKAGE_NAME}-build.XXXXXX`; \
 	mkdir -p $$TMPDIR/RPMS; \
 	ln -fs `pwd` $$TMPDIR/BUILD; \
-	rm -f ${PACKAGE_NAME}.${RPMARCH}.rpm; \
+	rm -f ${PACKAGE_NAME}-${VERSION}.${RPMARCH}.rpm; \
 	rpmbuild -bb --define "_blddir $$TMPDIR/buildroot"  \
 		--define "_topdir $$TMPDIR" --define "_srcdir ${srcdir}" \
-		--target ${RPMARCH} libjpeg-turbo.spec; \
-	cp $$TMPDIR/RPMS/${RPMARCH}/${PACKAGE_NAME}-${VERSION}-${BUILD}.${RPMARCH}.rpm ${PACKAGE_NAME}.${RPMARCH}.rpm; \
+		--target ${RPMARCH} pkgscripts/libjpeg-turbo.spec; \
+	cp $$TMPDIR/RPMS/${RPMARCH}/${PACKAGE_NAME}-${VERSION}-${BUILD}.${RPMARCH}.rpm \
+		${PACKAGE_NAME}-${VERSION}.${RPMARCH}.rpm; \
 	rm -rf $$TMPDIR
 
 srpm: dist-gzip
@@ -1440,33 +1468,33 @@ srpm: dist-gzip
 	mkdir -p $$TMPDIR/BUILD; \
 	mkdir -p $$TMPDIR/SOURCES; \
 	mkdir -p $$TMPDIR/SPECS; \
-	rm -f ${PACKAGE_NAME}.src.rpm; \
+	rm -f ${PACKAGE_NAME}-${VERSION}.src.rpm; \
 	cp ${PACKAGE_NAME}-${VERSION}.tar.gz $$TMPDIR/SOURCES; \
-	cat libjpeg-turbo.spec | sed s/%{_blddir}/%{_tmppath}/g \
+	cat pkgscripts/libjpeg-turbo.spec | sed s/%{_blddir}/%{_tmppath}/g \
 		| sed s@%{_srcdir}/@@g | sed s/#--\>//g \
-		>$$TMPDIR/SPECS/libjpeg-turbo.spec; \
+		> $$TMPDIR/SPECS/libjpeg-turbo.spec; \
 	rpmbuild -bs --define "_topdir $$TMPDIR" $$TMPDIR/SPECS/libjpeg-turbo.spec; \
-	cp $$TMPDIR/SRPMS/${PACKAGE_NAME}-${VERSION}-${BUILD}.src.rpm ${PACKAGE_NAME}.src.rpm; \
+	cp $$TMPDIR/SRPMS/${PACKAGE_NAME}-${VERSION}-${BUILD}.src.rpm \
+		${PACKAGE_NAME}-${VERSION}.src.rpm; \
 	rm -rf $$TMPDIR
 
 deb: all
-	sh $(srcdir)/release/makedpkg ${PACKAGE_NAME} ${VERSION} ${BUILD} \
-		${DEBARCH} ${srcdir}
+	sh pkgscripts/makedpkg
 
 @X86_64_TRUE@udmg: all
-@X86_64_TRUE@	sh makemacpkg universal ${BUILDDIR32}
+@X86_64_TRUE@	sh pkgscripts/makemacpkg universal ${BUILDDIR32}
 
 dmg: all
-	sh makemacpkg
+	sh pkgscripts/makemacpkg
 
 @X86_64_TRUE@csunpkg: all
-@X86_64_TRUE@	sh makesunpkg combined ${BUILDDIR32}
+@X86_64_TRUE@	sh pkgscripts/makesunpkg combined ${BUILDDIR32}
 
 sunpkg: all
-	sh makesunpkg
+	sh pkgscripts/makesunpkg
 
 cygwinpkg: all
-	sh $(srcdir)/release/makecygwinpkg ${PACKAGE_NAME} ${VERSION} ${srcdir}
+	sh pkgscripts/makecygwinpkg
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
