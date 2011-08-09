@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svnroot/libjpeg-turbo/!svn/ver/669/trunk/java
+END
+org_libjpegturbo_turbojpeg_TJCompressor.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/svnroot/libjpeg-turbo/!svn/ver/451/trunk/java/org_libjpegturbo_turbojpeg_TJCompressor.h
+END
+org_libjpegturbo_turbojpeg_TJ.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/svnroot/libjpeg-turbo/!svn/ver/668/trunk/java/org_libjpegturbo_turbojpeg_TJ.h
+END
+org_libjpegturbo_turbojpeg_TJTransformer.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svnroot/libjpeg-turbo/!svn/ver/518/trunk/java/org_libjpegturbo_turbojpeg_TJTransformer.h
+END
+MANIFEST.MF
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svnroot/libjpeg-turbo/!svn/ver/549/trunk/java/MANIFEST.MF
+END
+Makefile.am
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svnroot/libjpeg-turbo/!svn/ver/559/trunk/java/Makefile.am
+END
+TJExample.java
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svnroot/libjpeg-turbo/!svn/ver/561/trunk/java/TJExample.java
+END
+org_libjpegturbo_turbojpeg_TJDecompressor.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svnroot/libjpeg-turbo/!svn/ver/477/trunk/java/org_libjpegturbo_turbojpeg_TJDecompressor.h
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svnroot/libjpeg-turbo/!svn/ver/566/trunk/java/CMakeLists.txt
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svnroot/libjpeg-turbo/!svn/ver/563/trunk/java/README
+END
+TJUnitTest.java
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svnroot/libjpeg-turbo/!svn/ver/669/trunk/java/TJUnitTest.java
+END

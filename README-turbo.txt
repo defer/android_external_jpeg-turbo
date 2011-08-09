@@ -26,26 +26,55 @@ libraries can be used as drop-in replacements for libjpeg on most systems.
 **     License
 *******************************************************************************
 
-The TurboJPEG/OSS wrapper, as well as some of the optimizations to the Huffman
-encoder (jchuff.c) and decoder (jdhuff.c), were borrowed from VirtualGL, and
-thus any distribution of libjpeg-turbo which includes those files must, as a
-whole, be subject to the terms of the wxWindows Library Licence, Version 3.1.
-A copy of this license can be found in this directory under LICENSE.txt.  The
-wxWindows Library License is based on the LGPL but includes provisions which
-allow the Library to be statically linked into proprietary libraries and
-applications without requiring the resulting binaries to be distributed under
-the terms of the LGPL.
+libjpeg-turbo is licensed under a non-restrictive, BSD-style license
+(see README.)  The TurboJPEG/OSS wrapper (both C and Java versions) and
+associated test programs bear a similar license, which is reproduced below:
 
-The rest of the source code, apart from TurboJPEG/OSS and the Huffman codec
-optimizations, falls under a less restrictive, BSD-style license (see README.)
-You can choose to distribute libjpeg-turbo, as a whole, under this BSD-style
-license by simply removing TurboJPEG/OSS and replacing the optimized jchuff.c
-and jdhuff.c with their unoptimized counterparts from the libjpeg v6b source.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+- Neither the name of the libjpeg-turbo Project nor the names of its
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS",
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 
 
 *******************************************************************************
 **     Using libjpeg-turbo
 *******************************************************************************
+
+libjpeg-turbo includes two APIs which can be used to compress and decompress
+JPEG images:
+
+  TurboJPEG/OSS:  This API wraps libjpeg-turbo and provides an easy-to-use
+  interface for compressing and decompressing JPEG images in memory.  It also
+  provides some features that would not be straightforward to implement using
+  the underlying libjpeg API, such as generating planar YUV images and
+  performing multiple simultaneous lossless transforms on an image.  The Java
+  interface for libjpeg-turbo is written on top of TurboJPEG/OSS.
+
+  libjpeg API:  This is the industry standard API for compressing and
+  decompressing JPEG images.  It is more difficult to use than TurboJPEG/OSS
+  but also more powerful.  libjpeg-turbo is both API/ABI-compatible and
+  mathematically compatible with libjpeg v6b.  It can also optionally be
+  configured to be API/ABI-compatible with libjpeg v7 and v8 (see below.)
+
 
 =============================
 Replacing libjpeg at Run Time
