@@ -62,7 +62,6 @@ _\fname:
     vtrn.32 \x1, \x3
 .endm
 
-<<<<<<< HEAD
 #define CENTERJSAMPLE 128
 
 /*****************************************************************************/
@@ -537,8 +536,6 @@ asm_function jsimd_idct_islow_neon
     .unreq          ROW7R
 .endfunc
 
-=======
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
 /*****************************************************************************/
 
 /*
@@ -546,7 +543,6 @@ asm_function jsimd_idct_islow_neon
  *
  * This function contains a fast, not so accurate integer implementation of
  * the inverse DCT (Discrete Cosine Transform). It uses the same calculations
-<<<<<<< HEAD
  * and produces exactly the same output as IJG's original 'jpeg_idct_ifast'
  * function from jidctfst.c
  *
@@ -556,12 +552,6 @@ asm_function jsimd_idct_islow_neon
  * like "x * 1.082392200" have to be converted to "x * 0.082392200 + x",
  * which introduces an extra addition. Overall, there are 6 extra additions
  * per 1-D IDCT pass, totalling to 5 VQDMULH and 35 VADD/VSUB instructions.
-=======
- * and produces exactly the same output as IJG's original 'jpeg_idct_fast'
- * function from jidctfst.c
- *
- * TODO: a bit better instructions scheduling is needed.
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
  */
 
 #define XFIX_1_082392200 d0[0]
@@ -576,70 +566,12 @@ jsimd_idct_ifast_neon_consts:
     .short (473 * 128 - 256 * 128) /* XFIX_1_847759065 */
     .short (669 * 128 - 512 * 128) /* XFIX_2_613125930 */
 
-<<<<<<< HEAD
-=======
-/* 1-D IDCT helper macro */
-
-.macro idct_helper  x0, x1, x2, x3, x4, x5, x6, x7, \
-                    t10, t11, t12, t13, t14
-
-    vsub.s16        \t10, \x0, \x4
-    vadd.s16        \x4,  \x0, \x4
-    vswp.s16        \t10, \x0
-    vsub.s16        \t11, \x2, \x6
-    vadd.s16        \x6,  \x2, \x6
-    vswp.s16        \t11, \x2
-    vsub.s16        \t10, \x3, \x5
-    vadd.s16        \x5,  \x3, \x5
-    vswp.s16        \t10, \x3
-    vsub.s16        \t11, \x1, \x7
-    vadd.s16        \x7,  \x1, \x7
-    vswp.s16        \t11, \x1
-
-    vqdmulh.s16     \t13, \x2,  d0[1]
-    vadd.s16        \t12, \x3,  \x3
-    vadd.s16        \x2,  \x2,  \t13
-    vqdmulh.s16     \t13, \x3,  d0[3]
-    vsub.s16        \t10,  \x1, \x3
-    vadd.s16        \t12, \t12, \t13
-    vqdmulh.s16     \t13, \t10, d0[2]
-    vsub.s16        \t11, \x7,  \x5
-    vadd.s16        \t10, \t10, \t13
-    vqdmulh.s16     \t13, \t11, d0[1]
-    vadd.s16        \t11, \t11, \t13
-
-    vqdmulh.s16     \t13, \x1,  d0[0]
-    vsub.s16        \x2,  \x6,  \x2
-    vsub.s16        \t14, \x0,  \x2
-    vadd.s16        \x2,  \x0,  \x2
-    vadd.s16        \x0,  \x4,  \x6
-    vsub.s16        \x4,  \x4,  \x6
-    vadd.s16        \x1,  \x1,  \t13
-    vadd.s16        \t13, \x7,  \x5
-    vsub.s16        \t12, \t13, \t12
-    vsub.s16        \t12, \t12, \t10
-    vadd.s16        \t11, \t12, \t11
-    vsub.s16        \t10, \x1,  \t10
-    vadd.s16        \t10, \t10, \t11
-
-    vsub.s16        \x7,  \x0,  \t13
-    vadd.s16        \x0,  \x0,  \t13
-    vadd.s16        \x6,  \t14, \t12
-    vsub.s16        \x1,  \t14, \t12
-    vsub.s16        \x5,  \x2,  \t11
-    vadd.s16        \x2,  \x2,  \t11
-    vsub.s16        \x3,  \x4,  \t10
-    vadd.s16        \x4,  \x4,  \t10
-.endm
-
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
 asm_function jsimd_idct_ifast_neon
 
     DCT_TABLE       .req r0
     COEF_BLOCK      .req r1
     OUTPUT_BUF      .req r2
     OUTPUT_COL      .req r3
-<<<<<<< HEAD
     TMP1            .req r0
     TMP2            .req r1
     TMP3            .req r2
@@ -824,117 +756,18 @@ asm_function jsimd_idct_ifast_neon
       vst1.8          {d21}, [TMP2]
       vst1.8          {d22}, [TMP3]
       vst1.8          {d23}, [TMP4]
-=======
-    TMP             .req ip
-
-    vpush           {d8-d15}
-
-    /* Load constants */
-    adr             TMP, jsimd_idct_ifast_neon_consts
-    vld1.16         {d0}, [TMP, :64]
-
-    /* Load all COEF_BLOCK into NEON registers with the following allocation:
-     *       0 1 2 3 | 4 5 6 7
-     *      ---------+--------
-     *   0 | d4      | d5
-     *   1 | d6      | d7
-     *   2 | d8      | d9
-     *   3 | d10     | d11
-     *   4 | d12     | d13
-     *   5 | d14     | d15
-     *   6 | d16     | d17
-     *   7 | d18     | d19
-     */
-    vld1.16         {d4, d5, d6, d7}, [COEF_BLOCK]!
-    vld1.16         {d8, d9, d10, d11}, [COEF_BLOCK]!
-    vld1.16         {d12, d13, d14, d15}, [COEF_BLOCK]!
-    vld1.16         {d16, d17, d18, d19}, [COEF_BLOCK]!
-    /* Dequantize */
-    vld1.16         {d20, d21, d22, d23}, [DCT_TABLE]!
-    vmul.s16        q2, q2, q10
-    vld1.16         {d24, d25, d26, d27}, [DCT_TABLE]!
-    vmul.s16        q3, q3, q11
-    vmul.s16        q4, q4, q12
-    vld1.16         {d28, d29, d30, d31}, [DCT_TABLE]!
-    vmul.s16        q5, q5, q13
-    vmul.s16        q6, q6, q14
-    vld1.16         {d20, d21, d22, d23}, [DCT_TABLE]!
-    vmul.s16        q7, q7, q15
-    vmul.s16        q8, q8, q10
-    vmul.s16        q9, q9, q11
-
-    /* Pass 1 */
-    idct_helper     q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14
-    /* Transpose */
-    transpose_4x4   d4,  d6,  d8,  d10
-    transpose_4x4   d5,  d7,  d9,  d11
-    transpose_4x4   d12, d14, d16, d18
-    transpose_4x4   d13, d15, d17, d19
-    vswp            d12, d5
-    vswp            d14, d7
-    vswp            d16, d9
-    vswp            d18, d11
-
-    /* Pass 2 */
-    idct_helper     q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14
-    /* Transpose */
-    transpose_4x4   d4,  d6,  d8,  d10
-    transpose_4x4   d5,  d7,  d9,  d11
-    transpose_4x4   d12, d14, d16, d18
-    transpose_4x4   d13, d15, d17, d19
-    vswp            d12, d5
-    vswp            d14, d7
-    vswp            d16, d9
-    vswp            d18, d11
-
-    /* Descale and range limit */
-    vmov.s16        q15, #(0x80 << 5)
-    vqadd.s16       q2, q2, q15
-    vqadd.s16       q3, q3, q15
-    vqadd.s16       q4, q4, q15
-    vqadd.s16       q5, q5, q15
-    vqadd.s16       q6, q6, q15
-    vqadd.s16       q7, q7, q15
-    vqadd.s16       q8, q8, q15
-    vqadd.s16       q9, q9, q15
-    vqshrun.s16     d4, q2, #5
-    vqshrun.s16     d6, q3, #5
-    vqshrun.s16     d8, q4, #5
-    vqshrun.s16     d10, q5, #5
-    vqshrun.s16     d12, q6, #5
-    vqshrun.s16     d14, q7, #5
-    vqshrun.s16     d16, q8, #5
-    vqshrun.s16     d18, q9, #5
-
-    /* Store results to the output buffer */
-    .irp            x, d4, d6, d8, d10, d12, d14, d16, d18
-    ldr             TMP, [OUTPUT_BUF], #4
-    add             TMP, TMP, OUTPUT_COL
-    vst1.8          {\x}, [TMP]!
-    .endr
-
-    vpop            {d8-d15}
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
     bx              lr
 
     .unreq          DCT_TABLE
     .unreq          COEF_BLOCK
     .unreq          OUTPUT_BUF
     .unreq          OUTPUT_COL
-<<<<<<< HEAD
     .unreq          TMP1
     .unreq          TMP2
     .unreq          TMP3
     .unreq          TMP4
 .endfunc
 
-=======
-    .unreq          TMP
-.endfunc
-
-.purgem idct_helper
-
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
 /*****************************************************************************/
 
 /*
@@ -1319,21 +1152,12 @@ asm_function jsimd_idct_2x2_neon
 
 .macro do_load size
     .if \size == 8
-<<<<<<< HEAD
         vld1.8  {d4}, [U, :64]!
         vld1.8  {d5}, [V, :64]!
         vld1.8  {d0}, [Y, :64]!
         pld     [U, #64]
         pld     [V, #64]
         pld     [Y, #64]
-=======
-        vld1.8  {d4}, [U]!
-        vld1.8  {d5}, [V]!
-        vld1.8  {d0}, [Y]!
-        pld     [Y, #64]
-        pld     [U, #64]
-        pld     [V, #64]
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
     .elseif \size == 4
         vld1.8  {d4[0]}, [U]!
         vld1.8  {d4[1]}, [U]!
@@ -1403,15 +1227,11 @@ asm_function jsimd_idct_2x2_neon
 
 .macro generate_jsimd_ycc_rgb_convert_neon colorid, bpp, r_offs, g_offs, b_offs
 
-<<<<<<< HEAD
 /*
  * 2 stage pipelined YCbCr->RGB conversion
  */
 
 .macro do_yuv_to_rgb_stage1
-=======
-.macro do_yuv_to_rgb
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
     vaddw.u8        q3, q1, d4     /* q3 = u - 128 */
     vaddw.u8        q4, q1, d5     /* q2 = v - 128 */
     vmull.s16       q10, d6, d1[1] /* multiply by -11277 */
@@ -1422,12 +1242,9 @@ asm_function jsimd_idct_2x2_neon
     vmull.s16       q13, d9, d1[0] /* multiply by 22971 */
     vmull.s16       q14, d6, d1[3] /* multiply by 29033 */
     vmull.s16       q15, d7, d1[3] /* multiply by 29033 */
-<<<<<<< HEAD
 .endm
 
 .macro do_yuv_to_rgb_stage2
-=======
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
     vrshrn.s32      d20, q10, #15
     vrshrn.s32      d21, q11, #15
     vrshrn.s32      d24, q12, #14
@@ -1442,7 +1259,6 @@ asm_function jsimd_idct_2x2_neon
     vqmovun.s16     d1\b_offs, q14
 .endm
 
-<<<<<<< HEAD
 .macro do_yuv_to_rgb_stage2_store_load_stage1
     vld1.8          {d4}, [U, :64]!
       vrshrn.s32      d20, q10, #15
@@ -1480,8 +1296,6 @@ asm_function jsimd_idct_2x2_neon
     do_yuv_to_rgb_stage2
 .endm
 
-=======
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
 /* Apple gas crashes on adrl, work around that by using adr.
  * But this requires a copy of these constants for each function.
  */
@@ -1542,7 +1356,6 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
 
     /* Inner loop over pixels */
     subs            N, N, #8
-<<<<<<< HEAD
     blt             3f
     do_load         8
     do_yuv_to_rgb_stage1
@@ -1558,18 +1371,6 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
     tst             N, #7
     beq             8f
 3:
-=======
-    blt             2f
-1:
-    do_load         8
-    do_yuv_to_rgb
-    do_store        \bpp, 8
-    subs            N, N, #8
-    bge             1b
-    tst             N, #7
-    beq             8f
-2:
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
     tst             N, #4
     beq             3f
     do_load         4
@@ -1617,12 +1418,9 @@ asm_function jsimd_ycc_\colorid\()_convert_neon
 .endfunc
 
 .purgem do_yuv_to_rgb
-<<<<<<< HEAD
 .purgem do_yuv_to_rgb_stage1
 .purgem do_yuv_to_rgb_stage2
 .purgem do_yuv_to_rgb_stage2_store_load_stage1
-=======
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
 
 .endm
 
@@ -1638,7 +1436,6 @@ generate_jsimd_ycc_rgb_convert_neon extxrgb, 32, 1, 2, 3
 .purgem do_store
 
 /*****************************************************************************/
-<<<<<<< HEAD
 
 /*
  * jsimd_extrgb_ycc_convert_neon
@@ -2234,5 +2031,3 @@ asm_function jsimd_quantize_neon
     .unreq          SHIFT
     .unreq          LOOP_COUNT
 .endfunc
-=======
->>>>>>> 4a72099711359606b1fc10c1744057a6c568d5d8
