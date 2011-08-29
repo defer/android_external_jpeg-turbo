@@ -32,7 +32,9 @@ makedeb()
 	rm -f $PACKAGE_NAME\_$VERSION\_$DEBARCH.deb
 	TMPDIR=`mktemp -d /tmp/$PACKAGE_NAME-build.XXXXXX`
 	mkdir $TMPDIR/DEBIAN
-	cp pkgscripts/deb-control $TMPDIR/DEBIAN/control
+	(cat $SRCDIR/release/deb-control.tmpl | sed s/{__PKGNAME}/$PACKAGE_NAME/g \
+		| sed s/{__VERSION}/$VERSION/g | sed s/{__BUILD}/$BUILD/g \
+		| sed s/{__ARCH}/$DEBARCH/g > $TMPDIR/DEBIAN/control)
 
 	make install prefix=$TMPDIR/opt/$DIRNAME libdir=$TMPDIR/opt/$DIRNAME/$__LIB mandir=$TMPDIR/opt/$DIRNAME/man
 	rm -f $TMPDIR/opt/$DIRNAME/$__LIB/*.la
@@ -41,6 +43,7 @@ makedeb()
 		rm -rf $TMPDIR/opt/$DIRNAME/include
 		rm -rf $TMPDIR/opt/$DIRNAME/man
 		rm -rf $TMPDIR/opt/$DIRNAME/bin
+		rm -rf $TMPDIR/opt/$DIRNAME/classes
 	fi
 
 	mkdir -p $TMPDIR/usr/$__LIB
@@ -61,8 +64,6 @@ makedeb()
 		mv $TMPDIR/opt/$DIRNAME/include/turbojpeg.h $TMPDIR/usr/include
 		ln -fs /usr/include/turbojpeg.h $TMPDIR/opt/$DIRNAME/include/
 		mkdir -p $TMPDIR/usr/share/doc/$DIRNAME-$VERSION
-		install -m 644 $SRCDIR/LICENSE.txt $TMPDIR/usr/share/doc/$DIRNAME-$VERSION
-		install -m 644 $SRCDIR/LGPL.txt $TMPDIR/usr/share/doc/$DIRNAME-$VERSION
 		install -m 644 $SRCDIR/README-turbo.txt $TMPDIR/usr/share/doc/$DIRNAME-$VERSION
 		install -m 644 $SRCDIR/README $TMPDIR/usr/share/doc/$DIRNAME-$VERSION
 		install -m 644 $SRCDIR/libjpeg.txt $TMPDIR/usr/share/doc/$DIRNAME-$VERSION

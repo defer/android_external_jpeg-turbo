@@ -29,6 +29,7 @@ BUILD=@BUILD@
 PKGARCH=@DEBARCH@
 SRCDIR=@abs_top_srcdir@
 BUILDDIR32=@abs_top_srcdir@/solx86
+WITH_JAVA=@WITH_JAVA@
 if [ $# -gt 0 ]; then
 	if [ "$1" = "combined" ]; then
 		COMBINED=1
@@ -67,7 +68,7 @@ fi
 make install DESTDIR=$TMPDIR libdir=/opt/$PACKAGE_NAME/$__LIB mandir=/opt/$PACKAGE_NAME/man AM_MAKEFLAGS="libdir=/opt/$PACKAGE_NAME/$__LIB mandir=/opt/$PACKAGE_NAME/man"
 rm -f $TMPDIR/opt/$PACKAGE_NAME/$__LIB/*.la
 mkdir -p $TMPDIR/opt/$PACKAGE_NAME/doc
-cp $SRCDIR/LICENSE.txt $SRCDIR/LGPL.txt $SRCDIR/README-turbo.txt $SRCDIR/README $SRCDIR/libjpeg.txt $SRCDIR/usage.txt $TMPDIR/opt/$PACKAGE_NAME/doc
+cp $SRCDIR/README-turbo.txt $SRCDIR/README $SRCDIR/libjpeg.txt $SRCDIR/usage.txt $TMPDIR/opt/$PACKAGE_NAME/doc
 chmod 644 $TMPDIR/opt/$PACKAGE_NAME/doc/*
 
 cat >$TMPDIR/proto <<EOF
@@ -79,7 +80,7 @@ d none $PACKAGE_NAME/bin 0755 root bin
 f none $PACKAGE_NAME/bin/cjpeg 0755 root bin
 f none $PACKAGE_NAME/bin/djpeg 0755 root bin
 f none $PACKAGE_NAME/bin/jpegtran 0755 root bin
-f none $PACKAGE_NAME/bin/jpgtest 0755 root bin
+f none $PACKAGE_NAME/bin/tjbench 0755 root bin
 f none $PACKAGE_NAME/bin/rdjpgcom 0755 root bin
 f none $PACKAGE_NAME/bin/wrjpgcom 0755 root bin
 d none $PACKAGE_NAME/lib 0755 root bin
@@ -121,13 +122,15 @@ f none $PACKAGE_NAME/include/jmorecfg.h 0644 root bin
 f none $PACKAGE_NAME/include/jpeglib.h 0644 root bin
 f none $PACKAGE_NAME/include/turbojpeg.h 0644 root bin
 d none $PACKAGE_NAME/doc 0755 root bin
-f none $PACKAGE_NAME/doc/LGPL.txt 0644 root bin
 f none $PACKAGE_NAME/doc/libjpeg.txt 0644 root bin
-f none $PACKAGE_NAME/doc/LICENSE.txt 0644 root bin
 f none $PACKAGE_NAME/doc/README 0644 root bin
 f none $PACKAGE_NAME/doc/README-turbo.txt 0644 root bin
 f none $PACKAGE_NAME/doc/usage.txt 0644 root bin
 EOF
+if [ $WITH_JAVA = 1 ]; then
+echo d none $PACKAGE_NAME/classes 0755 root bin >>$TMPDIR/proto
+echo f none $PACKAGE_NAME/classes/turbojpeg.jar 0644 root bin >>$TMPDIR/proto
+fi
 
 pkgmk -o -r $TMPDIR/opt -d $TMPDIR -a i386 -f $TMPDIR/proto
 pkgtrans -s $TMPDIR $TMPDIR/$PACKAGE_NAME-$VERSION.pkg $PACKAGE_NAME

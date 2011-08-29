@@ -34,6 +34,14 @@ Build Requirements
 
 -- GCC v4.1 or later recommended for best performance
 
+-- If building the TurboJPEG/OSS Java wrapper, JDK or OpenJDK 1.5 or later is
+   required.  Some systems, such as OS X 10.4, Solaris 10 and later, and Red
+   Hat Enterprise Linux 5 and later, have this pre-installed.  On OS X 10.5 and
+   later, it will be necessary to install the Java Developer Package, which can
+   be downloaded from http://connect.apple.com.  For systems that do not have a
+   JDK installed, you can obtain the Oracle Java Development Kit from
+   http://www.java.com.
+
 
 ==================
 Out-of-Tree Builds
@@ -119,6 +127,22 @@ v7 or v6b as well.  The default is to enable both arithmetic encoding and
 decoding, but those who have philosophical objections to arithmetic coding can
 add --without-arith-enc or --without-arith-dec to the configure command line to
 disable encoding or decoding (respectively.)
+
+
+TurboJPEG/OSS Java Wrapper
+--------------------------
+Add --with-java to the configure command line to incorporate an optional Java
+Native Interface wrapper into the TurboJPEG/OSS dynamic library and build the
+Java front-end classes to support it.  This allows the TurboJPEG/OSS dynamic
+library to be used directly from Java applications.  See java/README for more
+details.
+
+You can set the JAVAC, JAR, and JAVA configure variables to specify
+alternate commands for javac, jar, and java (respectively.)  You can also
+set the JAVACFLAGS configure variable to specify arguments that should be
+passed to the Java compiler when building the front-end classes, and JNI_CFLAGS
+to specify arguments that should be passed to the C compiler when building the
+JNI wrapper.  Run 'configure --help' for more details.
 
 
 ========================
@@ -299,6 +323,9 @@ Build Requirements
 -- NASM (http://www.nasm.us/) 0.98 or later (NASM 2.05 or later is required for
    a 64-bit build)
 
+-- If building the TurboJPEG/OSS Java wrapper, JDK 1.5 or later is required.
+   This can be downloaded from http://www.java.com.
+
 
 ==================
 Out-of-Tree Builds
@@ -436,6 +463,22 @@ v7 or v6b as well.  The default is to enable both arithmetic encoding and
 decoding, but those who have philosophical objections to arithmetic coding can
 add "-DWITH_ARITH_ENC=0" or "-DWITH_ARITH_DEC=0" to the cmake command line to
 disable encoding or decoding (respectively.)
+
+
+TurboJPEG/OSS Java Wrapper
+--------------------------
+Add "-DWITH_JAVA=1" to the cmake command line to incorporate an optional Java
+Native Interface wrapper into the TurboJPEG/OSS dynamic library and build the
+Java front-end classes to support it.  This allows the TurboJPEG/OSS dynamic
+library to be used directly from Java applications.  See java/README for more
+details.
+
+If you are using CMake 2.8, you can set the Java_JAVAC_EXECUTABLE,
+Java_JAVA_EXECUTABLE, and Java_JAR_EXECUTABLE CMake variables to specify
+alternate commands or locations for javac, jar, and java (respectively.)  If
+you are using CMake 2.6, set JAVA_COMPILE, JAVA_RUNTIME, and JAVA_ARCHIVE
+instead.  You can also set the JAVACFLAGS CMake variable to specify arguments
+that should be passed to the Java compiler when building the front-end classes.
 
 
 ========================

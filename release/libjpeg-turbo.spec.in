@@ -12,7 +12,7 @@ URL: http://www.libjpeg-turbo.org
 Group: System Environment/Libraries
 #-->Source0: http://prdownloads.sourceforge.net/libjpeg-turbo/libjpeg-turbo-%{version}.tar.gz
 Release: @BUILD@
-License: wxWindows Library License, v3.1
+License: BSD-style
 BuildRoot: %{_blddir}/%{name}-buildroot-%{version}-%{release}
 Prereq: /sbin/ldconfig
 Provides: %{name} = %{version}-%{release}, turbojpeg = 2.00
@@ -43,7 +43,7 @@ available to a broader range of users and developers.
 #-->%setup -q
 
 #-->%build
-#-->./configure libdir=/opt/%{name}/%{__lib} mandir=/opt/%{name}/man JPEG_LIB_VERSION=@JPEG_LIB_VERSION@ SO_MAJOR_VERSION=@SO_MAJOR_VERSION@ SO_MINOR_VERSION=@SO_MINOR_VERSION@ --with-pic
+#-->./configure libdir=/opt/%{name}/%{__lib} mandir=/opt/%{name}/man JPEG_LIB_VERSION=@JPEG_LIB_VERSION@ SO_MAJOR_VERSION=@SO_MAJOR_VERSION@ SO_MINOR_VERSION=@SO_MINOR_VERSION@ --with-pic @RPM_CONFIG_ARGS@
 #-->make DESTDIR=$RPM_BUILD_ROOT libdir=/opt/%{name}/%{__lib} mandir=/opt/%{name}/man
 
 %install
@@ -69,13 +69,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc %{_srcdir}/README-turbo.txt %{_srcdir}/README %{_srcdir}/libjpeg.txt %{_srcdir}/usage.txt %{_srcdir}/LICENSE.txt %{_srcdir}/LGPL.txt
+%doc %{_srcdir}/README-turbo.txt %{_srcdir}/README %{_srcdir}/libjpeg.txt %{_srcdir}/usage.txt
 %dir /opt/%{name}
 %dir /opt/%{name}/bin
 /opt/%{name}/bin/cjpeg
 /opt/%{name}/bin/djpeg
 /opt/%{name}/bin/jpegtran
-/opt/%{name}/bin/jpgtest
+/opt/%{name}/bin/tjbench
 /opt/%{name}/bin/rdjpgcom
 /opt/%{name}/bin/wrjpgcom
 %dir /opt/%{name}/%{__lib}
@@ -104,5 +104,7 @@ rm -rf $RPM_BUILD_ROOT
 /opt/%{name}/man/man1/jpegtran.1*
 /opt/%{name}/man/man1/rdjpgcom.1*
 /opt/%{name}/man/man1/wrjpgcom.1*
+@JAVA_RPM_CONTENTS_1@
+@JAVA_RPM_CONTENTS_2@
 
 %changelog

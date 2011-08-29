@@ -28,6 +28,7 @@ VERSION=@VERSION@
 BUILD=@BUILD@
 SRCDIR=@abs_top_srcdir@
 BUILDDIR32=@abs_top_srcdir@/osxx86
+WITH_JAVA=@WITH_JAVA@
 if [ $# -gt 0 ]; then
 	if [ "$1" = "universal" ]; then
 		UNIVERSAL=1
@@ -103,9 +104,9 @@ if [ $UNIVERSAL = 1 ]; then
 		-arch x86_64 $PKGROOT/opt/$PACKAGE_NAME/bin/jpegtran \
 		-output $PKGROOT/opt/$PACKAGE_NAME/bin/jpegtran
 	lipo -create \
-		-arch i386 $TMPDIR/dist.x86/opt/$PACKAGE_NAME/bin/jpgtest \
-		-arch x86_64 $PKGROOT/opt/$PACKAGE_NAME/bin/jpgtest \
-		-output $PKGROOT/opt/$PACKAGE_NAME/bin/jpgtest
+		-arch i386 $TMPDIR/dist.x86/opt/$PACKAGE_NAME/bin/tjbench \
+		-arch x86_64 $PKGROOT/opt/$PACKAGE_NAME/bin/tjbench \
+		-output $PKGROOT/opt/$PACKAGE_NAME/bin/tjbench
 	lipo -create \
 		-arch i386 $TMPDIR/dist.x86/opt/$PACKAGE_NAME/bin/rdjpgcom \
 		-arch x86_64 $PKGROOT/opt/$PACKAGE_NAME/bin/rdjpgcom \
@@ -122,6 +123,9 @@ install_name_tool -id libturbojpeg.dylib $PKGROOT/usr/lib/libturbojpeg.dylib
 
 ln -fs /usr/include/turbojpeg.h $PKGROOT/opt/$PACKAGE_NAME/include/
 ln -fs /usr/lib/libturbojpeg.a $PKGROOT/opt/$PACKAGE_NAME/lib/
+if [ $WITH_JAVA = 1 ]; then
+	ln -fs libturbojpeg.dylib $PKGROOT/usr/lib/libturbojpeg.jnilib
+fi
 if [ ! -h $PKGROOT/opt/$PACKAGE_NAME/lib32 ]; then
 	ln -fs lib $PKGROOT/opt/$PACKAGE_NAME/lib32
 fi
@@ -138,8 +142,6 @@ cp pkgscripts/Description.plist $TMPDIR/pkg/
 cp pkgscripts/Info.plist $TMPDIR/pkg/
 install -m 755 pkgscripts/uninstall $PKGROOT/opt/$PACKAGE_NAME/bin/
 
-install -m 644 $SRCDIR/LICENSE.txt $PKGROOT/Library/Documentation/$PACKAGE_NAME/LICENSE.txt 
-install -m 644 $SRCDIR/LGPL.txt $PKGROOT/Library/Documentation/$PACKAGE_NAME/LGPL.txt 
 install -m 644 $SRCDIR/README-turbo.txt $PKGROOT/Library/Documentation/$PACKAGE_NAME/README-turbo.txt 
 install -m 644 $SRCDIR/README $PKGROOT/Library/Documentation/$PACKAGE_NAME/README 
 install -m 644 $SRCDIR/libjpeg.txt $PKGROOT/Library/Documentation/$PACKAGE_NAME/libjpeg.txt 
@@ -153,9 +155,6 @@ mkdir $TMPDIR/dmg
 $PACKAGEMAKER -build -v -p $TMPDIR/dmg/$PACKAGE_NAME.pkg \
 	-f $PKGROOT -r $TMPDIR/pkg/Resources \
 	-i $TMPDIR/pkg/Info.plist -d $TMPDIR/pkg/Description.plist 
-install -m 644 $SRCDIR/release/uninstall.applescript $TMPDIR 
-sudo osacompile -t APPL -o "$TMPDIR/dmg/Uninstall $PACKAGE_NAME.app" $TMPDIR/uninstall.applescript 
-sudo chown -R $USER "$TMPDIR/dmg/Uninstall $PACKAGE_NAME.app" 
 hdiutil create -fs HFS+ -volname $PACKAGE_NAME-$VERSION \
 	-srcfolder "$TMPDIR/dmg" $TMPDIR/$PACKAGE_NAME-$VERSION.dmg 
 cp $TMPDIR/$PACKAGE_NAME-$VERSION.dmg . 

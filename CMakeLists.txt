@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(libjpeg-turbo C)
-set(VERSION 1.1.1)
+set(VERSION 1.1.90)
 
 if(MINGW OR CYGWIN)
   execute_process(COMMAND "date" "+%Y%m%d" OUTPUT_VARIABLE BUILD)
@@ -18,6 +18,8 @@ else()
   message(FATAL_ERROR "Platform not supported by this build system.  Use autotools instead.")
 endif()
 
+# This does nothing except when using MinGW.  CMAKE_BUILD_TYPE has no meaning
+# in Visual Studio, and it always defaults to Debug when using NMake.
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -25,7 +27,7 @@ endif()
 message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
 # This only works if building from the command line.  There is currently no way
-# to set a variable's value based on the build type when using the MSVC IDE.
+# to set a variable's value based on the build type when using Visual Studio.
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(BUILD "${BUILD}d")
 endif()
@@ -37,6 +39,7 @@ option(WITH_ARITH_ENC "Include arithmetic encoding support" TRUE)
 option(WITH_ARITH_DEC "Include arithmetic decoding support" TRUE)
 option(WITH_JPEG7 "Emulate libjpeg v7 API/ABI (this makes libjpeg-turbo backward incompatible with libjpeg v6b)" FALSE)
 option(WITH_JPEG8 "Emulate libjpeg v8 API/ABI (this makes libjpeg-turbo backward incompatible with libjpeg v6b)" FALSE)
+option(WITH_JAVA "Build Java wrapper for the TurboJPEG/OSS library" FALSE)
 
 if(WITH_ARITH_ENC)
   set(C_ARITH_CODING_SUPPORTED 1)
@@ -50,6 +53,12 @@ if(WITH_ARITH_DEC)
   message(STATUS "Arithmetic decoding support enabled")
 else()
   message(STATUS "Arithmetic decoding support disabled")
+endif()
+
+if(WITH_JAVA)
+  message(STATUS "TurboJPEG/OSS Java wrapper enabled")
+else()
+  message(STATUS "TurboJPEG/OSS Java wrapper disabled")
 endif()
 
 set(JPEG_LIB_VERSION 62)
@@ -99,6 +108,14 @@ configure_file(win/config.h.in config.h)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR})
 
+if(WITH_JAVA)
+  find_package(Java)
+  find_package(JNI)
+  if(DEFINED JAVACFLAGS)
+    message(STATUS "Java compiler flags = ${JAVACFLAGS}")
+  endif()
+endif()
+
 
 #
 # Targets
@@ -139,6 +156,10 @@ else()
   message(STATUS "Not using SIMD acceleration")
 endif()
 
+if(WITH_JAVA)
+  add_subdirectory(java)
+endif()
+
 add_subdirectory(sharedlib)
 
 add_library(jpeg-static STATIC ${JPEG_SOURCES} ${SIMD_OBJS})
@@ -149,13 +170,22 @@ if(WITH_SIMD)
   add_dependencies(jpeg-static simd)
 endif()
 
-add_library(turbojpeg SHARED turbojpegl.c)
+set(TURBOJPEG_SOURCES turbojpeg.c transupp.c jdatadst-tj.c jdatasrc-tj.c)
+if(WITH_JAVA)
+  set(TURBOJPEG_SOURCES ${TURBOJPEG_SOURCES} turbojpeg-jni.c)
+  include_directories(${JAVA_INCLUDE_PATH} ${JAVA_INCLUDE_PATH2})
+endif()
+
+add_library(turbojpeg SHARED ${TURBOJPEG_SOURCES})
 set_target_properties(turbojpeg PROPERTIES DEFINE_SYMBOL DLLDEFINE)
+if(MINGW)
+  set_target_properties(turbojpeg PROPERTIES LINK_FLAGS -Wl,--kill-at)
+endif()
 target_link_libraries(turbojpeg jpeg-static)
 set_target_properties(turbojpeg PROPERTIES LINK_INTERFACE_LIBRARIES "")
 
 add_library(turbojpeg-static STATIC ${JPEG_SOURCES} ${SIMD_OBJS}
-  turbojpegl.c)
+  turbojpeg.c transupp.c jdatadst-tj.c jdatasrc-tj.c)
 if(NOT MSVC)
   set_target_properties(turbojpeg-static PROPERTIES OUTPUT_NAME turbojpeg)
 endif()
@@ -163,17 +193,23 @@ if(WITH_SIMD)
   add_dependencies(turbojpeg-static simd)
 endif()
 
-add_executable(jpegut jpegut.c)
-target_link_libraries(jpegut turbojpeg)
+add_executable(tjunittest tjunittest.c tjutil.c)
+target_link_libraries(tjunittest turbojpeg)
 
-add_executable(jpegut-static jpegut.c)
-target_link_libraries(jpegut-static turbojpeg-static)
+add_executable(tjunittest-static tjunittest.c tjutil.c)
+target_link_libraries(tjunittest-static turbojpeg-static)
 
-add_executable(jpgtest jpgtest.c bmp.c)
-target_link_libraries(jpgtest turbojpeg)
+add_executable(tjbench tjbench.c bmp.c tjutil.c rdbmp.c rdppm.c wrbmp.c
+  wrppm.c)
+target_link_libraries(tjbench turbojpeg jpeg)
+set_property(TARGET tjbench PROPERTY COMPILE_FLAGS
+  "-DBMP_SUPPORTED -DPPM_SUPPORTED")
 
-add_executable(jpgtest-static jpgtest.c bmp.c)
-target_link_libraries(jpgtest-static turbojpeg-static)
+add_executable(tjbench-static tjbench.c bmp.c tjutil.c rdbmp.c rdppm.c wrbmp.c
+  wrppm.c)
+target_link_libraries(tjbench-static turbojpeg-static jpeg-static)
+set_property(TARGET tjbench-static PROPERTY COMPILE_FLAGS
+  "-DBMP_SUPPORTED -DPPM_SUPPORTED")
 
 add_executable(cjpeg-static cjpeg.c cdjpeg.c rdbmp.c rdgif.c rdppm.c rdswitch.c
   rdtarga.c)
@@ -189,6 +225,7 @@ target_link_libraries(djpeg-static jpeg-static)
 
 add_executable(jpegtran-static jpegtran.c cdjpeg.c rdswitch.c transupp.c)
 target_link_libraries(jpegtran-static jpeg-static)
+set_property(TARGET jpegtran-static PROPERTY COMPILE_FLAGS "-DUSE_SETMODE")
 
 add_executable(rdjpgcom rdjpgcom.c)
 
@@ -199,9 +236,22 @@ add_executable(wrjpgcom rdjpgcom.c)
 # Tests
 #
 
+if(MSVC_IDE)
+  set(OBJDIR "\${CTEST_CONFIGURATION_TYPE}/")
+else()
+  set(OBJDIR "")
+endif()
+
 enable_testing()
-add_test(jpegut jpegut)
-add_test(jpegut-yuv jpegut -yuv)
+if(WITH_JAVA)
+add_test(TJUnitTest ${JAVA_RUNTIME} -cp java/${OBJDIR}turbojpeg.jar -Djava.library.path=${CMAKE_CURRENT_BINARY_DIR}/${OBJDIR} TJUnitTest)
+add_test(TJUnitTest-yuv ${JAVA_RUNTIME} -cp java/${OBJDIR}turbojpeg.jar -Djava.library.path=${CMAKE_CURRENT_BINARY_DIR}/${OBJDIR} TJUnitTest -yuv)
+add_test(TJUnitTest-bi ${JAVA_RUNTIME} -cp java/${OBJDIR}turbojpeg.jar -Djava.library.path=${CMAKE_CURRENT_BINARY_DIR}/${OBJDIR} TJUnitTest -bi)
+add_test(TJUnitTest-bi-yuv ${JAVA_RUNTIME} -cp java/${OBJDIR}turbojpeg.jar -Djava.library.path=${CMAKE_CURRENT_BINARY_DIR}/${OBJDIR} TJUnitTest -bi -yuv)
+endif()
+add_test(tjunittest tjunittest)
+add_test(tjunittest-alloc tjunittest -alloc)
+add_test(tjunittest-yuv tjunittest -yuv)
 add_test(cjpeg-int sharedlib/cjpeg -dct int -outfile testoutint.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 add_test(cjpeg-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.jpg testoutint.jpg)
 add_test(cjpeg-fast sharedlib/cjpeg -dct fast -opt -outfile testoutfst.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
@@ -214,6 +264,8 @@ add_test(cjpeg-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/t
 else()
 add_test(cjpeg-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgflt-nosimd.jpg testoutflt.jpg)
 endif()
+add_test(cjpeg-int-gray sharedlib/cjpeg -dct int -grayscale -outfile testoutgray.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
+add_test(cjpeg-int-gray-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimggray.jpg testoutgray.jpg)
 add_test(djpeg-int sharedlib/djpeg -dct int -fast -ppm -outfile testoutint.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(djpeg-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.ppm testoutint.ppm)
 add_test(djpeg-fast sharedlib/djpeg -dct fast -ppm -outfile testoutfst.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
@@ -224,6 +276,18 @@ add_test(djpeg-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/t
 else()
 add_test(djpeg-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testorig.ppm testoutflt.ppm)
 endif()
+add_test(djpeg-int-1_2 sharedlib/djpeg -dct int -scale 1/2 -ppm -outfile testoutint1_2.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-int-1_2-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_2.ppm testoutint1_2.ppm)
+add_test(djpeg-fast-1_2 sharedlib/djpeg -dct fast -scale 1/2 -ppm -outfile testoutfst1_2.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-fast-1_2-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_2.ppm testoutfst1_2.ppm)
+add_test(djpeg-int-1_4 sharedlib/djpeg -dct int -scale 1/4 -ppm -outfile testoutint1_4.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-int-1_4-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_4.ppm testoutint1_4.ppm)
+add_test(djpeg-fast-1_4 sharedlib/djpeg -dct fast -scale 1/4 -ppm -outfile testoutfst1_4.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-fast-1_4-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_4.ppm testoutfst1_4.ppm)
+add_test(djpeg-int-1_8 sharedlib/djpeg -dct int -scale 1/8 -ppm -outfile testoutint1_8.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-int-1_8-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_8.ppm testoutint1_8.ppm)
+add_test(djpeg-fast-1_8 sharedlib/djpeg -dct fast -scale 1/8 -ppm -outfile testoutfst1_8.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-fast-1_8-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_8.ppm testoutfst1_8.ppm)
 add_test(djpeg-256 sharedlib/djpeg -dct int -bmp -colors 256 -outfile testout.bmp  ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(djpeg-256-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimg.bmp testout.bmp)
 add_test(cjpeg-prog sharedlib/cjpeg -dct int -progressive -outfile testoutp.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
@@ -245,8 +309,9 @@ endif()
 add_test(jpegtran-crop sharedlib/jpegtran -crop 120x90+20+50 -transpose -perfect -outfile testoutcrop.jpg ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(jpegtran-crop-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgcrop.jpg testoutcrop.jpg)
 
-add_test(jpegut-static jpegut-static)
-add_test(jpegut-static-yuv jpegut-static -yuv)
+add_test(tjunittest-static tjunittest-static)
+add_test(tjunittest-static-alloc tjunittest-static -alloc)
+add_test(tjunittest-static-yuv tjunittest-static -yuv)
 add_test(cjpeg-static-int cjpeg-static -dct int -outfile testoutint.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 add_test(cjpeg-static-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.jpg testoutint.jpg)
 add_test(cjpeg-static-fast cjpeg-static -dct fast -opt -outfile testoutfst.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
@@ -259,6 +324,8 @@ add_test(cjpeg-static-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE
 else()
 add_test(cjpeg-static-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgflt-nosimd.jpg testoutflt.jpg)
 endif()
+add_test(cjpeg-static-int-gray cjpeg-static -dct int -grayscale -outfile testoutgray.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
+add_test(cjpeg-static-int-gray-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimggray.jpg testoutgray.jpg)
 add_test(djpeg-static-int djpeg-static -dct int -fast -ppm -outfile testoutint.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(djpeg-static-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.ppm testoutint.ppm)
 add_test(djpeg-static-fast djpeg-static -dct fast -ppm -outfile testoutfst.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
@@ -269,6 +336,18 @@ add_test(djpeg-static-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE
 else()
 add_test(djpeg-static-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testorig.ppm testoutflt.ppm)
 endif()
+add_test(djpeg-static-int-1_2 djpeg-static -dct int -scale 1/2 -ppm -outfile testoutint1_2.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-int-1_2-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_2.ppm testoutint1_2.ppm)
+add_test(djpeg-static-fast-1_2 djpeg-static -dct fast -scale 1/2 -ppm -outfile testoutfst1_2.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-fast-1_2-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_2.ppm testoutfst1_2.ppm)
+add_test(djpeg-static-int-1_4 djpeg-static -dct int -scale 1/4 -ppm -outfile testoutint1_4.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-int-1_4-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_4.ppm testoutint1_4.ppm)
+add_test(djpeg-static-fast-1_4 djpeg-static -dct fast -scale 1/4 -ppm -outfile testoutfst1_4.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-fast-1_4-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_4.ppm testoutfst1_4.ppm)
+add_test(djpeg-static-int-1_8 djpeg-static -dct int -scale 1/8 -ppm -outfile testoutint1_8.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-int-1_8-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint1_8.ppm testoutint1_8.ppm)
+add_test(djpeg-static-fast-1_8 djpeg-static -dct fast -scale 1/8 -ppm -outfile testoutfst1_8.ppm ${CMAKE_SOURCE_DIR}/testorig.jpg)
+add_test(djpeg-static-fast-1_8-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst1_8.ppm testoutfst1_8.ppm)
 add_test(djpeg-static-256 djpeg-static -dct int -bmp -colors 256 -outfile testout.bmp  ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(djpeg-static-256-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimg.bmp testout.bmp)
 add_test(cjpeg-static-prog cjpeg-static -dct int -progressive -outfile testoutp.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
@@ -289,6 +368,9 @@ add_test(jpegtran-static-fromari-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_S
 endif()
 add_test(jpegtran-static-crop jpegtran-static -crop 120x90+20+50 -transpose -perfect -outfile testoutcrop.jpg ${CMAKE_SOURCE_DIR}/testorig.jpg)
 add_test(jpegtran-static-crop-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgcrop.jpg testoutcrop.jpg)
+
+add_custom_target(testclean COMMAND ${CMAKE_COMMAND} -P
+  ${CMAKE_SOURCE_DIR}/cmakescripts/testclean.cmake)
 
 
 #
@@ -313,6 +395,10 @@ if(64BIT)
   set(INST_DEFS ${INST_DEFS} -DWIN64)
 endif()
 
+if(WITH_JAVA)
+  set(INST_DEFS ${INST_DEFS} -DJAVA)
+endif()
+
 if(MSVC_IDE)
   set(INST_DEFS ${INST_DEFS} "-DBUILDDIR=${CMAKE_CFG_INTDIR}\\")
 else()
@@ -324,10 +410,10 @@ configure_file(release/libjpeg-turbo.nsi.in libjpeg-turbo.nsi @ONLY)
 add_custom_target(installer
   makensis -nocd ${INST_DEFS} libjpeg-turbo.nsi
   DEPENDS jpeg jpeg-static turbojpeg turbojpeg-static rdjpgcom wrjpgcom
-    cjpeg djpeg jpegtran jpgtest
+    cjpeg djpeg jpegtran tjbench
   SOURCES libjpeg-turbo.nsi)
 
-install(TARGETS jpeg-static turbojpeg turbojpeg-static rdjpgcom wrjpgcom jpgtest
+install(TARGETS jpeg-static turbojpeg turbojpeg-static rdjpgcom wrjpgcom tjbench
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
