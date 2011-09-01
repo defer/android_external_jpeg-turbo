@@ -313,6 +313,11 @@ typedef int boolean;
 #define RGB_BLUE	2	/* Offset of Blue */
 #define RGB_PIXELSIZE	3	/* JSAMPLEs per RGB scanline element */
 
+#ifdef ANDROID_RGB
+#define RGB_ALPHA   3   /* Offset of Alpha */
+#endif
+
+
 #define JPEG_NUMCS 12
 
 static const int rgb_red[JPEG_NUMCS] = {
@@ -330,6 +335,29 @@ static const int rgb_blue[JPEG_NUMCS] = {
 static const int rgb_pixelsize[JPEG_NUMCS] = {
 	-1, -1, RGB_PIXELSIZE, -1, -1, -1, 3, 4, 3, 4, 4, 4
 };
+
+
+/*
+ * Define ANDROID_RGB to enable specific optimizations for Android
+ *   JCS_RGBA_8888 support
+ *   JCS_RGB_565 support
+ *
+ */
+
+#ifdef ANDROID_RGB
+#define PACK_SHORT_565(r,g,b)  ((((r)<<8)&0xf800)|(((g)<<3)&0x7E0)|((b)>>3))
+#define PACK_TWO_PIXELS(l,r)   ((r<<16) | l)
+#define PACK_NEED_ALIGNMENT(ptr) (((int)(ptr))&3)
+#define WRITE_TWO_PIXELS(addr, pixels) do {     \
+         ((INT16*)(addr))[0] = (pixels);        \
+         ((INT16*)(addr))[1] = (pixels)>>16;    \
+    } while(0)
+#define WRITE_TWO_ALIGNED_PIXELS(addr, pixels)  ((*(INT32*)(addr)) = pixels)
+#define DITHER_565_R(r, dither) ((r) + ((dither)&0xFF))
+#define DITHER_565_G(g, dither) ((g) + (((dither)&0xFF)>>1))
+#define DITHER_565_B(b, dither) ((b) + ((dither)&0xFF))
+#endif
+
 
 /* Definitions for speed-related optimizations. */
 

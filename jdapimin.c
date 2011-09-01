@@ -54,6 +54,10 @@ jpeg_CreateDecompress (j_decompress_ptr cinfo, int version, size_t structsize)
   }
   cinfo->is_decompressor = TRUE;
 
+#ifdef ANDROID
+  cinfo->tile_decode = FALSE;
+#endif
+
   /* Initialize a memory manager instance for this object */
   jinit_memory_mgr((j_common_ptr) cinfo);
 
@@ -370,6 +374,9 @@ jpeg_finish_decompress (j_decompress_ptr cinfo)
 {
   if ((cinfo->global_state == DSTATE_SCANNING ||
        cinfo->global_state == DSTATE_RAW_OK) && ! cinfo->buffered_image) {
+#ifdef ANDROID_TILE_BASED_DECODE
+    cinfo->output_scanline = cinfo->output_height;
+#endif
     /* Terminate final pass of non-buffered mode */
     if (cinfo->output_scanline < cinfo->output_height)
       ERREXIT(cinfo, JERR_TOO_LITTLE_DATA);
@@ -383,10 +390,12 @@ jpeg_finish_decompress (j_decompress_ptr cinfo)
     ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
   }
   /* Read until EOI */
+#ifndef ANDROID_TILE_BASED_DECODE
   while (! cinfo->inputctl->eoi_reached) {
     if ((*cinfo->inputctl->consume_input) (cinfo) == JPEG_SUSPENDED)
       return FALSE;		/* Suspend, come back later */
   }
+#endif
   /* Do final cleanup */
   (*cinfo->src->term_source) (cinfo);
   /* We can use jpeg_abort to release memory and reset global_state */

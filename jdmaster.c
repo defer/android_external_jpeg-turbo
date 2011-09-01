@@ -49,6 +49,16 @@ use_merged_upsample (j_decompress_ptr cinfo)
   /* Merging is the equivalent of plain box-filter upsampling */
   if (cinfo->do_fancy_upsampling || cinfo->CCIR601_sampling)
     return FALSE;
+#ifdef ANDROID_RGB
+  /* jdmerge.c only supports YCC=>RGB565 and YCC=>RGB color conversion */
+  if (cinfo->jpeg_color_space != JCS_YCbCr ||
+      cinfo->num_components != 3 ||
+      cinfo->out_color_components != 3 ||
+      (cinfo->out_color_space != JCS_RGB_565 &&
+         cinfo->out_color_space != JCS_RGB)) {
+    return FALSE;
+  }
+#else
   /* jdmerge.c only supports YCC=>RGB color conversion */
   if (cinfo->jpeg_color_space != JCS_YCbCr || cinfo->num_components != 3 ||
       (cinfo->out_color_space != JCS_RGB &&
@@ -60,6 +70,7 @@ use_merged_upsample (j_decompress_ptr cinfo)
       cinfo->out_color_space != JCS_EXT_XRGB) ||
       cinfo->out_color_components != rgb_pixelsize[cinfo->out_color_space])
     return FALSE;
+#endif /* ANDROID_RGB */
   /* and it only handles 2h1v or 2h2v sampling ratios */
   if (cinfo->comp_info[0].h_samp_factor != 2 ||
       cinfo->comp_info[1].h_samp_factor != 1 ||
@@ -98,8 +109,12 @@ jpeg_calc_output_dimensions (j_decompress_ptr cinfo)
 #endif
 
   /* Prevent application from calling me at wrong times */
-  if (cinfo->global_state != DSTATE_READY)
-    ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
+#if ANDROID_TILE_BASED_DECODE
+  // Tile based decoding may call this function several times.
+  if (!cinfo->tile_decode)
+#endif /* ANDROID_TILE_BASED_DECODE */
+    if (cinfo->global_state != DSTATE_READY)
+      ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
 
 #ifdef IDCT_SCALING_SUPPORTED
 
@@ -211,9 +226,15 @@ jpeg_calc_output_dimensions (j_decompress_ptr cinfo)
   case JCS_EXT_XRGB:
     cinfo->out_color_components = rgb_pixelsize[cinfo->out_color_space];
     break;
+#ifdef ANDROID_RGB
+  case JCS_RGB_565:
+#endif /* ANDROID_RGB */
   case JCS_YCbCr:
     cinfo->out_color_components = 3;
     break;
+#ifdef ANDROID_RGB
+  case JCS_RGBA_8888:
+#endif
   case JCS_CMYK:
   case JCS_YCCK:
     cinfo->out_color_components = 4;

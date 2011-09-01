@@ -85,6 +85,7 @@ typedef INT32 bit_buf_type;	/* type of bit-extraction buffer */
 #define BIT_BUF_SIZE  32		/* size of buffer in bits */
 
 #endif
+#define LOG_TWO_BIT_BUF_SIZE  5        /* log_2(BIT_BUF_SIZE) */
 
 /* If long is > 32 bits on your machine, and shifting/masking longs is
  * reasonably fast, making bit_buf_type be long and setting BIT_BUF_SIZE
