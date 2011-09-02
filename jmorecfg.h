@@ -11,6 +11,17 @@
  * optimizations.  Most users will not need to touch this file.
  */
 
+/*
+ * When we're building for android, turn on ANDROID_RGB by default. 
+ * This is needed for components like skia which make use of the
+ * new encodings defined behind ANDROID_RBG. It's not a reasonable
+ * config to have ANDROID_RBG off.
+ */
+#ifdef ANDROID
+#ifndef ANDROID_RGB
+#define ANDROID_RGB
+#endif
+#endif
 
 /*
  * Define BITS_IN_JSAMPLE as either
