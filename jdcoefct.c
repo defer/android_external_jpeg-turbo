@@ -25,6 +25,19 @@
 #undef BLOCK_SMOOTHING_SUPPORTED
 #endif
 
+#ifdef ANDROID
+METHODDEF(int)
+consume_data_multi_scan (j_decompress_ptr cinfo);
+
+METHODDEF(int)
+consume_data_build_huffman_index_baseline (j_decompress_ptr cinfo,
+        huffman_index *index, int current_scan);
+
+METHODDEF(int)
+consume_data_build_huffman_index_progressive (j_decompress_ptr cinfo,
+        huffman_index *index, int current_scan);
+#endif
+
 /* Private buffer controller object */
 
 typedef struct {

@@ -60,7 +60,3 @@
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
 
-/* Android specific */
-#define ANDROID_RGB
-
-#define ENABLE_ANDROID_NULL_CONVERT
