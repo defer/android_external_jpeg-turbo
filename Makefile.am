@@ -1,6 +1,8 @@
 lib_LTLIBRARIES = libjpeg.la libturbojpeg.la
 libjpeg_la_LDFLAGS = -version-info ${SO_MAJOR_VERSION}:${SO_MINOR_VERSION} -no-undefined
 libturbojpeg_la_LDFLAGS = -avoid-version -no-undefined
+libturbojpeg_la_CFLAGS = -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays  -DANDROID \
+        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 include_HEADERS = jerror.h jmorecfg.h jpeglib.h turbojpeg.h
 nodist_include_HEADERS = jconfig.h
 
@@ -42,7 +44,7 @@ SUBDIRS = java
 if WITH_JAVA
 
 libturbojpeg_la_SOURCES += turbojpeg-jni.c
-libturbojpeg_la_CFLAGS = ${JNI_CFLAGS}
+libturbojpeg_la_CFLAGS += ${JNI_CFLAGS}
 TJMAPFILE = turbojpeg-mapfile.jni
 
 else

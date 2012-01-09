@@ -54,6 +54,8 @@ endif
 
 if SIMD_ARM
 
+libsimd_la_CFLAGS = -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays  -DANDROID \
+        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 libsimd_la_SOURCES = jsimd_arm.c jsimd_arm_neon.S
 
 endif
