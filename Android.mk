@@ -16,11 +16,14 @@ EXTRA_DIST = simd/nasm_lt.sh simd/jcclrmmx.asm simd/jcclrss2.asm simd/jdclrmmx.a
 libsimd_SOURCES_DIST = simd/jsimd_arm_neon.S \
                        simd/jsimd_arm.c 
 
+# or jsimd_none.c
+
+ 
 LOCAL_SRC_FILES := $(libsimd_SOURCES_DIST)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/simd \
-                    $(LOCAL_PATH)/android
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/simd
  
+LOCAL_CFLAGS := 
 AM_CFLAGS := -march=armv7-a -mfpu=neon
 AM_CCASFLAGS := -march=armv7-a -mfpu=neon
  
@@ -49,6 +52,8 @@ libjpeg_SOURCES_DIST =  jcapimin.c jcapistd.c jccoefct.c jccolor.c \
 	turbojpeg.c transupp.c jdatadst-tj.c jdatasrc-tj.c \
 	turbojpeg-mapfile
 
+#possible adds jmem-android.c jmemnobs.c jmemmgr.c jmem-ashmem.c 
+
 LOCAL_SRC_FILES:= $(libjpeg_SOURCES_DIST)
  
 LOCAL_SHARED_LIBRARIES := libcutils
@@ -59,6 +64,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)
 LOCAL_CFLAGS := -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays  -DANDROID \
         -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
+#-DANDROID_TILE_BASED_DECODE -DUSE_ANDROID_ASHMEM 
+ 
 LOCAL_MODULE_PATH := $(TARGET_OUT_OPTIONAL_STATIC_LIBRARY)
  
 LOCAL_MODULE_TAGS := debug
@@ -81,8 +88,7 @@ LOCAL_SRC_FILES:= $(cjpeg_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) \
-                    $(LOCAL_PATH)/android
+LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
 LOCAL_CFLAGS := -DBMP_SUPPORTED -DGIF_SUPPORTED -DPPM_SUPPORTED -DTARGA_SUPPORTED \
          -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
@@ -109,8 +115,7 @@ LOCAL_SRC_FILES:= $(djpeg_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) \
-                    $(LOCAL_PATH)/android
+LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
 LOCAL_CFLAGS := -DBMP_SUPPORTED -DGIF_SUPPORTED -DPPM_SUPPORTED -DTARGA_SUPPORTED \
             -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
@@ -136,8 +141,7 @@ LOCAL_SRC_FILES:= $(jpegtran_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) \
-                    $(LOCAL_PATH)/android
+LOCAL_C_INCLUDES := $(LOCAL_PATH) 
 
 LOCAL_CFLAGS := -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
