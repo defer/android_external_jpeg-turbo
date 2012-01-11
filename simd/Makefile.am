@@ -55,8 +55,11 @@ endif
 if SIMD_ARM
 
 libsimd_la_CFLAGS = -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays  -DANDROID \
-        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
-libsimd_la_SOURCES = jsimd_arm.c jsimd_arm_neon.S
+        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT -DANDROID_JPEG_USE_VENUM \
+        -march=armv7-a -mfpu=neon
+libsimd_la_CCASFLAGS = -O3 -march=armv7-a -mfpu=neon
+libsimd_la_SOURCES = jsimd_arm.c jsimd_arm_neon.S \
+                     ../asm/armv7/jdcolor-armv7.S ../asm/armv7/jdidct-armv7.S
 
 endif
 

@@ -307,6 +307,46 @@ struct jpeg_color_quantizer {
 };
 
 
+#ifdef ANDROID_JPEG_USE_VENUM
+/* IDCT routines */
+EXTERN (void) idct_1x1_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
+EXTERN (void) idct_2x2_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
+EXTERN (void) idct_4x4_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
+EXTERN (void) idct_8x8_venum (INT16 * coeffPtr, INT16 * samplePtr, INT32 stride);
+
+/* Color conversion routines */
+EXTERN (void) yvup2rgb565_venum (UINT8 *pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 *pRGB565Line,
+                JDIMENSION nLineWidth);
+EXTERN (void) yyvup2rgb565_venum (UINT8 * pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 * pRGB565Line,
+                JDIMENSION nLineWidth);
+EXTERN (void) yvup2bgr888_venum (UINT8 * pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 * pBGR888Line,
+                JDIMENSION nLineWidth);
+EXTERN (void) yyvup2bgr888_venum (UINT8 * pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 * pBGR888Line,
+                JDIMENSION nLineWidth);
+EXTERN (void) yvup2abgr8888_venum (UINT8 * pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 * pABGR888Line,
+                JDIMENSION nLineWidth);
+EXTERN (void) yyvup2abgr8888_venum (UINT8 * pLumaLine,
+                UINT8 *pCrLine,
+                UINT8 *pCbLine,
+                UINT8 * pABGR888Line,
+                JDIMENSION nLineWidth);
+#endif
+
 /* Miscellaneous useful macros */
 
 #undef MAX

@@ -27,6 +27,40 @@
 #include <string.h>
 #include <ctype.h>
 
+typedef JMETHOD(void, upsample1_ptr,
+                (j_decompress_ptr cinfo, jpeg_component_info * compptr,
+                 JSAMPARRAY input_data, JSAMPARRAY * output_data_ptr));
+
+typedef struct {
+  struct jpeg_upsampler pub;    /* public fields */
+
+  /* Color conversion buffer.  When using separate upsampling and color
+   * conversion steps, this buffer holds one upsampled row group until it
+   * has been color converted and output.
+   * Note: we do not allocate any storage for component(s) which are full-size,
+   * ie do not need rescaling.  The corresponding entry of color_buf[] is
+   * simply set to point to the input data array, thereby avoiding copying.
+   */
+  JSAMPARRAY color_buf[MAX_COMPONENTS];
+
+  /* Per-component upsampling method pointers */
+  upsample1_ptr methods[MAX_COMPONENTS];
+
+  int next_row_out;             /* counts rows emitted from color_buf */
+  JDIMENSION rows_to_go;        /* counts rows remaining in image */
+
+  /* Height of an input row group for each component. */
+  int rowgroup_height[MAX_COMPONENTS];
+
+  /* These arrays save pixel expansion factors so that int_expand need not
+   * recompute them each time.  They are unused for other upsampling methods.
+   */
+  UINT8 h_expand[MAX_COMPONENTS];
+  UINT8 v_expand[MAX_COMPONENTS];
+} my_upsampler;
+
+typedef my_upsampler * my_upsample_ptr;
+
 static unsigned int simd_support = ~0;
 
 #if defined(__linux__) || defined(ANDROID) || defined(__ANDROID__)
@@ -354,7 +388,11 @@ jsimd_can_h2v2_merged_upsample (void)
 {
   init_simd();
 
+#ifdef ANDROID_JPEG_USE_VENUM
+  return 1;
+#else
   return 0;
+#endif
 }
 
 GLOBAL(int)
@@ -362,7 +400,12 @@ jsimd_can_h2v1_merged_upsample (void)
 {
   init_simd();
 
+
+#ifdef ANDROID_JPEG_USE_VENUM
+  return 1;
+#else
   return 0;
+#endif
 }
 
 GLOBAL(void)
@@ -371,6 +414,46 @@ jsimd_h2v2_merged_upsample (j_decompress_ptr cinfo,
                             JDIMENSION in_row_group_ctr,
                             JSAMPARRAY output_buf)
 {
+#ifdef ANDROID_JPEG_USE_VENUM
+  my_upsample_ptr upsample = (my_upsample_ptr) cinfo->upsample;
+  JSAMPROW outptr0, outptr1;
+  JSAMPROW inptr00, inptr01, inptr1, inptr2;
+  inptr00 = input_buf[0][in_row_group_ctr*2];
+  inptr01 = input_buf[0][in_row_group_ctr*2 + 1];
+  inptr1  = input_buf[1][in_row_group_ctr];
+  inptr2  = input_buf[2][in_row_group_ctr];
+  outptr0 = output_buf[0];
+  outptr1 = output_buf[1];
+
+#ifdef ANDROID_RGB
+  if (cinfo->out_color_space == JCS_RGBA_8888) {
+    yyvup2abgr8888_venum((UINT8*) inptr00,
+                         (UINT8*) inptr2,
+                         (UINT8*) inptr1,
+                         (UINT8*) outptr0,
+                         cinfo->output_width);
+    yyvup2abgr8888_venum((UINT8*) inptr01,
+                         (UINT8*) inptr2,
+                         (UINT8*) inptr1,
+                         (UINT8*) outptr1,
+                         cinfo->output_width);
+  } else
+#endif
+  {
+    yyvup2bgr888_venum((UINT8*) inptr00,
+                       (UINT8*) inptr2,
+                       (UINT8*) inptr1,
+                       (UINT8*) outptr0,
+                       cinfo->output_width);
+
+    yyvup2bgr888_venum((UINT8*) inptr01,
+                       (UINT8*) inptr2,
+                       (UINT8*) inptr1,
+                       (UINT8*) outptr1,
+                       cinfo->output_width);
+  }
+
+#endif
 }
 
 GLOBAL(void)
@@ -379,6 +462,34 @@ jsimd_h2v1_merged_upsample (j_decompress_ptr cinfo,
                             JDIMENSION in_row_group_ctr,
                             JSAMPARRAY output_buf)
 {
+#ifdef ANDROID_JPEG_USE_VENUM
+
+  my_upsample_ptr upsample = (my_upsample_ptr) cinfo->upsample;
+  JSAMPROW inptr0, inptr1, inptr2;
+  JSAMPROW outptr;
+
+  inptr0 = input_buf[0][in_row_group_ctr];
+  inptr1 = input_buf[1][in_row_group_ctr];
+  inptr2 = input_buf[2][in_row_group_ctr];
+  outptr = output_buf[0];
+
+#ifdef ANDROID_RGB
+  if (cinfo->out_color_space == JCS_RGBA_8888) {
+    yyvup2abgr8888_venum((UINT8*) inptr0,
+                         (UINT8*) inptr2,
+                         (UINT8*) inptr1,
+                         (UINT8*) outptr,
+                         cinfo->output_width);
+  } else
+#endif
+  {
+    yyvup2bgr888_venum((UINT8*) inptr0,
+                       (UINT8*) inptr2,
+                       (UINT8*) inptr1,
+                       (UINT8*) outptr,
+                       cinfo->output_width);
+  }
+#endif
 }
 
 GLOBAL(int)

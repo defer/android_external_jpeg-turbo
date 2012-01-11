@@ -7,6 +7,18 @@ ifneq ($(TARGET_SIMULATOR),true)
 ##################################################
 LOCAL_PATH := $(my-dir)
 include $(CLEAR_VARS)
+
+# Set ANDROID_JPEG_USE_VENUM to true to enable VeNum optimizations
+ANDROID_JPEG_USE_VENUM := true
+
+# Disable VeNum optimizations if they are not supported on the build target
+#ifneq ($(ARCH_ARM_HAVE_VFP),true)
+#ANDROID_JPEG_USE_VENUM := false
+#else
+#ifneq ($(ARCH_ARM_HAVE_NEON),true)
+#ANDROID_JPEG_USE_VENUM := false
+#endif
+#endif
  
 # From autoconf-generated Makefile
 EXTRA_DIST = simd/nasm_lt.sh simd/jcclrmmx.asm simd/jcclrss2.asm simd/jdclrmmx.asm simd/jdclrss2.asm \
@@ -14,6 +26,7 @@ EXTRA_DIST = simd/nasm_lt.sh simd/jcclrmmx.asm simd/jcclrss2.asm simd/jdclrmmx.a
 	simd/jdmrgss2-64.asm simd/CMakeLists.txt
  
 libsimd_SOURCES_DIST = simd/jsimd_arm_neon.S \
+                       asm/armv7//jdcolor-armv7.S asm/armv7/jdidct-armv7.S \
                        simd/jsimd_arm.c 
 
 # or jsimd_none.c
@@ -21,9 +34,10 @@ libsimd_SOURCES_DIST = simd/jsimd_arm_neon.S \
  
 LOCAL_SRC_FILES := $(libsimd_SOURCES_DIST)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/simd
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/simd \
+                    $(LOCAL_PATH)/android
  
-LOCAL_CFLAGS := 
+LOCAL_CFLAGS := -DANDROID_JPEG_USE_VENUM
 AM_CFLAGS := -march=armv7-a -mfpu=neon
 AM_CCASFLAGS := -march=armv7-a -mfpu=neon
  
@@ -59,10 +73,11 @@ LOCAL_SRC_FILES:= $(libjpeg_SOURCES_DIST)
 LOCAL_SHARED_LIBRARIES := libcutils
 LOCAL_STATIC_LIBRARIES := libsimd
  
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH) \
+                    $(LOCAL_PATH)/android
  
 LOCAL_CFLAGS := -DAVOID_TABLES  -O3 -fstrict-aliasing -fprefetch-loop-arrays  -DANDROID \
-        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
+        -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT -DANDROID_JPEG_USE_VENUM
 
 #-DANDROID_TILE_BASED_DECODE -DUSE_ANDROID_ASHMEM 
  
@@ -88,7 +103,8 @@ LOCAL_SRC_FILES:= $(cjpeg_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
+                    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DBMP_SUPPORTED -DGIF_SUPPORTED -DPPM_SUPPORTED -DTARGA_SUPPORTED \
          -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
@@ -115,7 +131,8 @@ LOCAL_SRC_FILES:= $(djpeg_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DBMP_SUPPORTED -DGIF_SUPPORTED -DPPM_SUPPORTED -DTARGA_SUPPORTED \
             -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
@@ -141,7 +158,8 @@ LOCAL_SRC_FILES:= $(jpegtran_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
@@ -166,7 +184,8 @@ LOCAL_SRC_FILES:= $(tjunittest_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH) \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
@@ -192,7 +211,8 @@ LOCAL_SRC_FILES:= $(tjbench_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DBMP_SUPPORTED -DPPM_SUPPORTED \
          -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
@@ -218,7 +238,8 @@ LOCAL_SRC_FILES:= $(rdjpgcom_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH)  \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS :=  -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
@@ -243,7 +264,8 @@ LOCAL_SRC_FILES:= $(wrjpgcom_SOURCES)
 
 LOCAL_SHARED_LIBRARIES := libjpeg
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH) 
+LOCAL_C_INCLUDES := $(LOCAL_PATH) \
+				    $(LOCAL_PATH)/android
 
 LOCAL_CFLAGS := -DANDROID -DANDROID_TILE_BASED_DECODE -DENABLE_ANDROID_NULL_CONVERT
 
